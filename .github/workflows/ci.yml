@@ -13,7 +13,13 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
-      - run: python -m pytest backend/tests
+      - run: python -m pytest backend/tests --junitxml=backend-test-results.xml
+      - name: Upload backend test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend-test-results.xml
       - run: python -m scripts.evaluate_anomaly_model
       - run: python -m compileall -q mobile backend scripts
   postgres-redis:

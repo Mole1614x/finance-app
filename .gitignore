@@ -14,3 +14,4 @@ arth-demo.db-*
 *.db-shm
 .venv-android/
 android-test-output/
+.venv-mobile/
