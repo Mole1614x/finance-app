@@ -42,7 +42,7 @@ limiter = RateLimiter(os.getenv("ARTH_RATE_LIMIT_REDIS_URL"))
 AUTH_ROUTES = {"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/otp/request",
                "/api/v1/auth/otp/verify", "/api/v1/auth/refresh"}
 MONEY_ROUTES = {"/api/v1/accounts/initialize", "/api/v1/accounts/move",
-                "/api/v1/payments/send", "/api/v1/services/purchase"}
+                "/api/v1/payments/send", "/api/v1/payments/recover", "/api/v1/payments/cancel", "/api/v1/services/purchase"}
 
 AI_ROUTES = {"/api/v1/analytics/assistant"}
 

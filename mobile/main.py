@@ -27,6 +27,15 @@ class ArthApp(MDApp):
         Thread(target=revoke, daemon=True).start()
         self.root.current = "welcome"
 
+    def on_pause(self):
+        if self.root and hasattr(self.root, "stop_demo_camera"):
+            self.root.stop_demo_camera()
+        return True
+
+    def on_stop(self):
+        if self.root and hasattr(self.root, "stop_demo_camera"):
+            self.root.stop_demo_camera()
+
     def build(self):
         self.title = "ARTH"
         self.theme_cls.primary_palette = "Blue"

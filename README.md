@@ -56,3 +56,6 @@ The Financial assistant is local by default. For opt-in Gemini explanations of f
 
 ## ML anomaly review (PR 13)
 Open Financial insights > Anomaly review. A local Isolation Forest trained on fictional data highlights unusual spending patterns for review, never blocks a transaction. Run `python -m scripts.evaluate_anomaly_model` for held-out synthetic metrics. See docs/anomaly-model.md.
+
+## QR and peer payment recovery (PR 14)
+Scan an ARTH demo QR using the optional local camera, or paste its text. Peer payments keep the original reference across app restarts. Check, retry or safely cancel unresolved references after signing in again. Run Alembic upgrades for managed deployments. See docs/payment-recovery.md. Physical-device camera and APK tests remain pending.
