@@ -72,6 +72,18 @@ class AuthClient:
         return self.call("/send", {"payment_id": identifier, "amount_minor": amount_minor},
                          namespace="/api/v1/payments", extra_headers={"Idempotency-Key": key})
 
+    def transactions(self, kind="all", offset=0):
+        from urllib.parse import urlencode
+        query = urlencode({"kind": kind, "offset": offset, "limit": 20})
+        return self.call("?" + query, method="GET", namespace="/api/v1/transactions")
+
+    def transaction(self, reference):
+        from urllib.parse import quote
+        return self.call("/" + quote(reference, safe=""), method="GET", namespace="/api/v1/transactions")
+
+    def lookup_payment(self, key):
+        return self.call("/payment-lookup", {"idempotency_key": key}, namespace="/api/v1/transactions")
+
     def profile(self):
         return self.call('/me', method='GET')
 

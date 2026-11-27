@@ -97,6 +97,23 @@ def install_payment_screens(manager, make, nav, go, run):
             go("payment_success")
         run(lambda: client.send_payment(ident, minor, key), completed, confirm_status)
 
+    def check_status():
+        if not draft.get("attempted") or draft.get("token") != manager.auth_client.access:
+            confirm_status.text = "No attempted payment in this session."
+            return
+        client = copy(manager.auth_client)
+        key = draft["key"]
+        def checked(data):
+            if data["status"] == "completed":
+                transaction = data["transaction"]
+                success_copy.text = inr(transaction["amount_minor"]) + "\nSimulated transfer completed.\nReference: " + transaction["payment_reference"]
+                draft.clear()
+                recipient.text = amount.text = ""
+                go("payment_success")
+            else:
+                confirm_status.text = "Outcome unknown. Retry only with the same reference."
+        run(lambda: client.lookup_payment(key), checked, confirm_status)
+
     def back():
         if draft.get("attempted") and draft.get("token") == manager.auth_client.access:
             confirm_status.text = "Retry with the same reference to resolve the payment. For a definite rejection, discard it."
@@ -113,6 +130,7 @@ def install_payment_screens(manager, make, nav, go, run):
     body.add_widget(button("Back", lambda: go("home"), True))
     nav(outer)
     confirm_body.add_widget(button("Confirm / retry same payment", execute))
+    confirm_body.add_widget(button("Check payment status", check_status, True))
     confirm_body.add_widget(button("Back", back, True))
     confirm_body.add_widget(label("Only discard after a definite rejection. A network error may mean the transfer already completed.", 80))
     confirm_body.add_widget(button("Discard reference", discard, True))

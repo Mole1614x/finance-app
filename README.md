@@ -35,3 +35,6 @@ After signing in, open Bank accounts and initialize the demo checking and saving
 
 ## Demo peer payments (PR 6)
 Initialize accounts for two fictional users. Copy the recipient's ARTH-only payment identifier from Receive, enter it and an amount in Send, review and confirm. No real money or UPI. QR display and decoded-text input are supported; camera scanning is pending. See docs/payments.md.
+
+## Transaction history (PR 7)
+Open History to view completed demo ledger entries, filter by type and copy a simulated receipt. During an uncertain payment, check status using the same reference. See docs/transactions.md.
