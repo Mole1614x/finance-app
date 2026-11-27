@@ -63,3 +63,17 @@ jobs:
       - run: docker compose exec -T worker python -c 'from backend.app.worker import ping; assert ping.delay().get(timeout=30) == "pong"'
       - if: always()
         run: docker compose down -v
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    env:
+      KIVY_NO_ARGS: "1"
+      KIVY_NO_CONSOLELOG: "1"
+      KIVY_METRICS_DENSITY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1 libmtdev1t64
+      - run: pip install -r mobile/requirements.txt
+      - run: timeout 90 xvfb-run -a python -m mobile.smoke

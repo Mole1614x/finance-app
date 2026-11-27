@@ -5,6 +5,7 @@ from kivy.metrics import dp
 from kivy.utils import get_color_from_hex
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, RoundedRectangle, Line
 from kivymd.uix.card import MDCard
@@ -52,9 +53,10 @@ class CashflowChart(Widget):
 
 def install_dashboard(manager: ScreenManager, sign_out):
     busy = False
+    manager.dashboard_busy = False
     current_name = label("ARTH", 56, "H5", theme.WHITE)
     menu_name = label("Demo user", 56, "H5")
-    balance = label("Loading balance...", 52, "H5", theme.SUCCESS)
+    balance = label("Loading balance...", 52, "H5", "#087943")
     status = label("", 48)
     chart = CashflowChart()
     profile_name = field("Display name")
@@ -73,11 +75,13 @@ def install_dashboard(manager: ScreenManager, sign_out):
         if busy:
             return
         busy = True
+        manager.dashboard_busy = True
         token = manager.auth_client.access
         message.text = "Loading..."
         def finish(value, error):
             nonlocal busy
             busy = False
+            manager.dashboard_busy = False
             if token != manager.auth_client.access:
                 return
             message.text = error or ""
@@ -106,8 +110,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
     def nav(outer):
         row = BoxLayout(size_hint_y=None, height=dp(58), spacing=dp(2))
         for name, title in (("home", "Home"), ("notifications", "Alerts"), ("profile", "Profile")):
-            b = MDFlatButton(text=title, size_hint_x=1)
-            b.bind(on_release=lambda _, target=name: go(target))
+            b = button(title, lambda target=name: go(target), True)
             row.add_widget(b)
         outer.add_widget(row)
 
@@ -120,13 +123,13 @@ def install_dashboard(manager: ScreenManager, sign_out):
         recent.text = "\n".join(row_label(r) for r in data["recent_transactions"][:3]) or "No recent transactions."
 
     home, outer, body = make("home")
-    header = MDCard(orientation="vertical", size_hint_y=None, height=dp(152),
+    header = MDCard(orientation="vertical", size_hint_y=None, height=dp(176),
                     radius=[dp(30)], padding=dp(12), md_bg_color=get_color_from_hex(theme.PRIMARY))
     header.add_widget(button("Menu", lambda: go("menu"), True))
     header.add_widget(current_name)
     header.add_widget(label("ARTH | DEMO", 28, "Caption", theme.WHITE))
     body.add_widget(header)
-    card = MDCard(orientation="vertical", size_hint_y=None, height=dp(300),
+    card = MDCard(orientation="vertical", size_hint_y=None, height=dp(325),
                   radius=[dp(theme.BALANCE_RADIUS)], padding=dp(18), elevation=2)
     card.add_widget(label("Your total demo balance", 32))
     card.add_widget(balance)
@@ -134,8 +137,12 @@ def install_dashboard(manager: ScreenManager, sign_out):
     card.add_widget(label("Current month net demo cashflow (UTC)", 32, "Caption"))
     body.add_widget(card)
     body.add_widget(button("Check your bank accounts", lambda: go("accounts")))
+    body.add_widget(label("Quick actions", 36, "H6"))
+    actions = GridLayout(cols=2, spacing=dp(8), size_hint_y=None)
+    actions.bind(minimum_height=actions.setter("height"))
     for name, title in (("scan", "Scan & Pay"), ("send", "Send money"), ("receive", "Receive money"), ("transactions", "Transaction history")):
-        body.add_widget(button(title, lambda target=name: go(target), True))
+        actions.add_widget(button(title, lambda target=name: go(target), True))
+    body.add_widget(actions)
     body.add_widget(button("Bills and recharge", lambda: go("services")))
     body.add_widget(button("Rewards and offers", lambda: go("promotions"), True))
     body.add_widget(button("Financial insights", lambda: go("analytics")))
@@ -151,6 +158,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
         chart.update_values([])
         run(manager.auth_client.dashboard, update_home, status)
     home.bind(on_pre_enter=lambda *_: load())
+    home.bind(on_leave=lambda *_: setattr(recent, "text", ""))
 
     menu, _, body = make("menu", "ARTH")
     body.add_widget(menu_name)
@@ -166,6 +174,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
     def profile_loaded(data):
         profile_name.text = data["display_name"]
     profile.bind(on_pre_enter=lambda *_: run(manager.auth_client.profile, profile_loaded, profile_status))
+    profile.bind(on_leave=lambda *_: setattr(profile_name, "text", ""))
     def save():
         value = profile_name.text
         run(lambda: manager.auth_client.update_profile(value),

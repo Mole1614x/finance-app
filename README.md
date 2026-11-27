@@ -47,3 +47,6 @@ Open Financial insights for actual demo ledger monthly spending, categories, bud
 
 ## Demo release readiness (PR 10)
 Use sh scripts/start-demo.sh to initialize private local secrets and start Compose. See docs/release.md for Alembic adoption, CI checks, limitations and local Kubernetes instructions. Existing databases require explicit baseline adoption after verification; do not delete existing data.
+
+## Native UX (PR 11)
+Shared mobile components and onboarding/navigation refinement. Run `python -m mobile.smoke` with a graphical display (CI uses Xvfb). Exact Figma asset matching remains blocked; see docs/native-ux.md.
