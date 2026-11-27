@@ -1,6 +1,8 @@
 """Native financial insights based on committed demo ledger transactions."""
 from datetime import datetime, timezone
 from uuid import uuid4
+from kivy.uix.switch import Switch
+from kivy.metrics import dp
 try:
     from .onboarding_ui import label, field, button
     from .dashboard_data import inr
@@ -113,12 +115,17 @@ def install_analytics_screens(manager, make, nav, go, run):
     nav(outer)
 
     assistant, outer, body = make("assistant", "Financial assistant")
-    body.add_widget(label("Local rule-based demo assistant. No LLM, financial advice or confirmed fraud detection.", 90))
+    body.add_widget(label("Local assistant by default. Optional Gemini explanations send fictional aggregate amounts and fixed categories only to Google. No real data or financial advice.", 120))
+    body.add_widget(label("Allow Gemini for this screen (optional)", 48))
+    consent = Switch(active=False, size_hint_y=None, height=dp(48))
+    body.add_widget(consent)
     answer = label("", 240)
     error = label("", 60)
     body.add_widget(answer)
     body.add_widget(error)
     def ask(topic):
+        allow_external = consent.active
+        answer.text = ""
         def show_answer(data):
             info = data["answer"]
             if topic == "spending":
@@ -129,9 +136,16 @@ def install_analytics_screens(manager, make, nav, go, run):
                 answer.text = "Saved: " + money(info["saved_minor"]) + "\nTarget: " + money(info["target_minor"])
             else:
                 answer.text = info["note"] + "\n" + ("\n".join(money(x["amount_minor"]) + " — review suggested" for x in info["flags"]) or "No flags from the current heuristic.")
-        run(lambda: manager.auth_client.assistant(topic), show_answer, error)
+            if data.get("engine") == "gemini":
+                answer.text += "\n\nGemini explanation (may be inaccurate):\n" + data["explanation"]
+            elif allow_external:
+                answer.text += "\n\nGemini unavailable; local facts shown."
+        run(lambda: manager.auth_client.assistant(topic, allow_external), show_answer, error)
     for topic, name in (("spending", "Spending summary"), ("budget", "Budget status"), ("savings", "Savings progress"), ("risk", "Unusual spending")):
         body.add_widget(button(name, lambda topic=topic: ask(topic)))
     body.add_widget(button("Back home", lambda: go("home"), True))
-    assistant.bind(on_leave=lambda *_: setattr(answer, "text", ""))
+    def reset_assistant(*_):
+        answer.text = error.text = ""
+        consent.active = False
+    assistant.bind(on_leave=reset_assistant)
     nav(outer)

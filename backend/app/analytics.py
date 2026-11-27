@@ -1,4 +1,4 @@
-"""Owner-scoped financial insights from the simulated ledger. No external AI or real money."""
+"""Owner-scoped demo financial insights and opt-in aggregate explanations."""
 from calendar import monthrange
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -14,6 +14,7 @@ from backend.app.auth import Base, LoginSession, active_session, get_db, fail
 from backend.app.ledger import Journal, lock_owner, owned_accounts
 from backend.app.transactions import visible_query, render
 from backend.app.services import ServiceOrder, CATALOG
+from backend.app.ai_assistant import explain
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["demo financial insights"])
 MAX_TARGET = 10000000000
@@ -177,6 +178,7 @@ def set_goal(data: GoalInput, session: LoginSession = Depends(active_session), d
 
 class AssistantInput(BaseModel):
     topic: Literal["spending", "budget", "savings", "risk"]
+    allow_external_ai: bool = Field(default=False, strict=True)
 
 @router.post("/assistant")
 def assistant(data: AssistantInput, session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
@@ -190,4 +192,7 @@ def assistant(data: AssistantInput, session: LoginSession = Depends(active_sessi
         answer = goal_for(db, owner)
     else:
         answer = {"flags": info["anomalies"], "note": "Heuristic review flags are not proof of fraud."}
-    return {"mode": "demo", "engine": "deterministic rules", "topic": data.topic, "answer": answer}
+    # Release the read transaction before any bounded external call.
+    db.rollback()
+    generated = explain(data.topic, answer, data.allow_external_ai)
+    return {"mode": "demo", "topic": data.topic, "answer": answer, **generated}
