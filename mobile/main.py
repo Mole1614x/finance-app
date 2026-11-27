@@ -3,45 +3,13 @@ from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.core.window import Window
 from kivymd.app import MDApp
+try:
+    from .onboarding_ui import install_onboarding
+except ImportError:
+    from onboarding_ui import install_onboarding
 
 KV = """
 ScreenManager:
-    Screen:
-        name: 'welcome'
-        MDBoxLayout:
-            orientation: 'vertical'
-            padding: dp(30)
-            spacing: dp(22)
-            canvas.before:
-                Color:
-                    rgba: 0.078, 0.075, 1, 1
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
-            Widget:
-            MDLabel:
-                text: 'ARTH'
-                font_style: 'H2'
-                theme_text_color: 'Custom'
-                text_color: 1, 1, 1, 1
-                halign: 'center'
-            MDLabel:
-                text: 'Pay. Manage. Prosper.'
-                theme_text_color: 'Custom'
-                text_color: 1, 1, 1, 1
-                halign: 'center'
-            Widget:
-            MDRaisedButton:
-                text: 'Explore demo'
-                pos_hint: {'center_x': .5}
-                on_release: root.current = 'home'
-            MDLabel:
-                text: 'Demo only • No real money'
-                halign: 'center'
-                theme_text_color: 'Custom'
-                text_color: 1, 1, 1, 1
-                size_hint_y: None
-                height: dp(36)
     Screen:
         name: 'home'
         MDBoxLayout:
@@ -99,7 +67,9 @@ class ArthApp(MDApp):
         self.title = "ARTH"
         self.theme_cls.primary_palette = "Blue"
         Window.clearcolor = (1, 1, 1, 1)
-        return Builder.load_string(KV)
+        manager = Builder.load_string(KV)
+        install_onboarding(manager)
+        return manager
 
 if __name__ == "__main__":
     ArthApp().run()
