@@ -29,3 +29,6 @@ Start the API first. Register a fictional @example.com account, use a demo passw
 
 ## Dashboard (PR 4)
 After demo verification, the authenticated dashboard shows a synthetic balance and chart, profile editing and navigation to clearly labeled payment previews. See docs/dashboard.md.
+
+## Simulated accounts (PR 5)
+After signing in, open Bank accounts and initialize the demo checking and savings accounts. The backend records INR 8,500 of fictional opening funds once. The dashboard reads ledger balances. Internal moves can be tested through Swagger; see docs/ledger.md. No real money or banking.

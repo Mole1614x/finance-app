@@ -164,13 +164,30 @@ def install_dashboard(manager: ScreenManager, sign_out):
     body.add_widget(button("Sign out", sign_out, True))
     nav(outer)
 
+    accounts_screen, outer, body = make("accounts", "Demo bank accounts")
+    body.add_widget(label("Simulated accounts only. No real bank linking.", 72))
+    account_summary = label("", 100)
+    account_status = label("", 48)
+    body.add_widget(account_summary)
+    body.add_widget(account_status)
+    def show_accounts(data):
+        accounts = data["accounts"]
+        account_summary.text = "\n".join(a["kind"].title() + ": " + inr(a["balance_minor"]) for a in accounts) or "No demo accounts. Initialize to receive simulated funds."
+    def load_accounts():
+        account_summary.text = ""
+        run(manager.auth_client.accounts, show_accounts, account_status)
+    accounts_screen.bind(on_pre_enter=lambda *_: load_accounts())
+    body.add_widget(button("Initialize demo accounts", lambda: run(manager.auth_client.initialize_accounts, show_accounts, account_status)))
+    body.add_widget(button("Refresh", load_accounts, True))
+    body.add_widget(button("Back to home", lambda: go("home"), True))
+    nav(outer)
+
     descriptions = {
         "payments": ("Payments", "Select a payment option. Transfers are not enabled yet."),
         "scan": ("Scan & Pay", "Camera and payment QR validation are planned. No camera access or payment is performed."),
-        "send": ("Send money", "The simulated ledger and transfer engine are not available yet."),
+        "send": ("Send money", "Peer-to-peer demo payments are planned. Internal demo account moves are available through the API."),
         "receive": ("Receive money", "Personal demo payment identifiers will be available in a later phase."),
-        "transactions": ("Transactions", "No transaction history yet. The demo balance is illustrative."),
-        "accounts": ("Bank accounts", "No accounts linked. Demo account management is planned."),
+        "transactions": ("Transactions", "Transaction history UI is planned. Demo account balances now come from the ledger."),
         "notifications": ("Notifications", "No notifications yet."),
         "promotions": ("Promotions", "No active offers."),
         "savings": ("Savings", "Savings tools are planned."),

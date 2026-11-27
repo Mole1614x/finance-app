@@ -13,7 +13,7 @@ from argon2.exceptions import VerificationError
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, ForeignKey, Integer, String, create_engine, select, update
+from sqlalchemy import Boolean, ForeignKey, Integer, String, create_engine, event, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
@@ -54,6 +54,12 @@ class LoginSession(Base):
 @lru_cache(maxsize=1)
 def engine():
     db = create_engine(os.getenv("DATABASE_URL", "sqlite:///./arth-demo.db"))
+    if db.dialect.name == "sqlite":
+        @event.listens_for(db, "connect")
+        def sqlite_foreign_keys(connection, _):
+            cursor = connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
     Base.metadata.create_all(db)
     return db
 
