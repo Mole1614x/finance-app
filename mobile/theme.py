@@ -1,0 +1,12 @@
+"""Core design tokens extracted from the ARTH Figma reference."""
+PRIMARY = "#1413FF"
+SECONDARY = "#2743FD"
+CYAN = "#4DCEF2"
+PURPLE = "#AC2E98"
+SUCCESS = "#20C968"
+TEXT = "#3A3A3A"
+MUTED = "#B9B9B9"
+WHITE = "#FFFFFF"
+REFERENCE_SIZE = (375, 812)
+BALANCE_RADIUS = 44
+BUTTON_RADIUS = 28
