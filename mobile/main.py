@@ -27,6 +27,20 @@ class ArthApp(MDApp):
         Thread(target=revoke, daemon=True).start()
         self.root.current = "welcome"
 
+    def on_start(self):
+        # Explicit ADB opt-in, never on ordinary launches.
+        from kivy.utils import platform
+        if platform == "android":
+            from jnius import autoclass
+            activity = autoclass("org.kivy.android.PythonActivity").mActivity
+            if activity.getIntent().getBooleanExtra("arth_smoke", False):
+                from kivy.clock import Clock
+                try:
+                    from .android_smoke import check
+                except ImportError:
+                    from android_smoke import check
+                Clock.schedule_once(lambda *_: check(self.root), 3)
+
     def on_pause(self):
         if self.root and hasattr(self.root, "stop_demo_camera"):
             self.root.stop_demo_camera()

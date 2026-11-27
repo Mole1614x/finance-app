@@ -77,3 +77,75 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1 libmtdev1t64
       - run: pip install -r mobile/requirements.txt
       - run: timeout 90 xvfb-run -a python -u -m mobile.smoke
+  android-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf libtool libtool-bin libltdl-dev pkg-config zlib1g-dev libncurses-dev libtinfo6 cmake ninja-build libffi-dev libssl-dev automake autopoint gettext
+          python -m pip install -r mobile/android-build-requirements.txt
+      - name: Build Android APK
+        run: bash scripts/build_android.sh
+      - name: Upload debug APK and SHA-256
+        uses: actions/upload-artifact@v4
+        with:
+          name: arth-android-debug
+          path: |
+            mobile/bin/*.apk
+            mobile/bin/*.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+  android-emulator:
+    runs-on: ubuntu-24.04
+    needs: android-apk
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: pip install -r backend/requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: arth-android-debug
+          path: mobile/bin
+      - name: Verify checksum
+        run: cd mobile/bin && sha256sum -c *.apk.sha256
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and run ARTH on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          disable-animations: true
+          script: bash scripts/android_emulator_smoke.sh
+      - name: Upload emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arth-android-emulator-diagnostics
+          path: android-test-output/
+          if-no-files-found: warn
+          retention-days: 7
