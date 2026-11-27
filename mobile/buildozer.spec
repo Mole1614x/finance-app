@@ -4,7 +4,7 @@ package.name = arth
 package.domain = com.arth
 source.dir = .
 source.include_exts = py,kv,png,jpg,json,ttf
-version = 0.13.0
+version = 0.14.0
 requirements = python3==3.11.11,hostpython3==3.11.11,kivy==2.3.1,kivymd==1.2.0,pillow,numpy,opencv,pyjnius,qrcode
 orientation = portrait
 fullscreen = 0

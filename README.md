@@ -34,7 +34,7 @@ After demo verification, the authenticated dashboard shows a synthetic balance a
 After signing in, open Bank accounts and initialize the demo checking and savings accounts. The backend records INR 8,500 of fictional opening funds once. The dashboard reads ledger balances. Internal moves can be tested through Swagger; see docs/ledger.md. No real money or banking.
 
 ## Demo peer payments (PR 6)
-Initialize accounts for two fictional users. Copy the recipient's ARTH-only payment identifier from Receive, enter it and an amount in Send, review and confirm. No real money or UPI. QR display and decoded-text input are supported; camera scanning is pending. See docs/payments.md.
+Initialize accounts for two fictional users. Copy the recipient's ARTH-only payment identifier from Receive, enter it and an amount in Send, review and confirm. No real money or UPI. QR display, decoded-text input and optional local camera scanning are implemented; physical camera testing is pending. See docs/payments.md.
 
 ## Transaction history (PR 7)
 Open History to view completed demo ledger entries, filter by type and copy a simulated receipt. During an uncertain payment, check status using the same reference. See docs/transactions.md.
@@ -62,3 +62,6 @@ Scan an ARTH demo QR using the optional local camera, or paste its text. Peer pa
 
 ## Android debug build (PR 15)
 The CI workflow builds and checks an ARM64/x86-64 debug APK and runs an Android emulator smoke test. Download the APK only from a successful workflow artifact. Use ADB reverse for local-only backend access. See docs/android.md for setup and physical-device checklist.
+
+## Final desktop demo (PR 16)
+Run `sh scripts/start-demo.sh` in one terminal and `sh scripts/start-mobile.sh` in another. Stop the application normally and run `docker compose down` (without `-v`). See docs/demo-acceptance.md for acceptance coverage, migration/restart checks and outstanding limitations. Android build verification is deferred: PR 15 merged with failed APK CI and skipped emulator. No installable APK is claimed. Keep Android tests enabled and verify them separately before distribution.
