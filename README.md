@@ -50,3 +50,6 @@ Use sh scripts/start-demo.sh to initialize private local secrets and start Compo
 
 ## Native UX (PR 11)
 Shared mobile components and onboarding/navigation refinement. Run `python -m mobile.smoke` with a graphical display (CI uses Xvfb). Exact Figma asset matching remains blocked; see docs/native-ux.md.
+
+## Optional Gemini assistant (PR 12)
+The Financial assistant is local by default. For opt-in Gemini explanations of fictional aggregate data only, configure private `ARTH_AI_ENABLED=1`, `ARTH_GEMINI_API_KEY`, and `ARTH_GEMINI_MODEL`. Never commit secrets or use real financial data. See docs/ai-assistant.md.

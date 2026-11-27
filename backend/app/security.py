@@ -44,14 +44,16 @@ AUTH_ROUTES = {"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/otp/
 MONEY_ROUTES = {"/api/v1/accounts/initialize", "/api/v1/accounts/move",
                 "/api/v1/payments/send", "/api/v1/services/purchase"}
 
+AI_ROUTES = {"/api/v1/analytics/assistant"}
+
 async def security_middleware(request, call_next):
     path = request.url.path.rstrip("/")
     response = None
-    if request.method == "POST" and path in AUTH_ROUTES | MONEY_ROUTES:
+    if request.method == "POST" and path in AUTH_ROUTES | MONEY_ROUTES | AI_ROUTES:
         # Do not trust forwarded IP headers; run Uvicorn with proxy headers disabled.
         peer = request.client.host if request.client else "unknown"
-        group = "auth" if path in AUTH_ROUTES else "money"
-        limit = int(os.getenv("ARTH_AUTH_RATE_LIMIT", "60")) if group == "auth" else 120
+        group = "auth" if path in AUTH_ROUTES else "ai" if path in AI_ROUTES else "money"
+        limit = int(os.getenv("ARTH_AUTH_RATE_LIMIT", "60")) if group == "auth" else 10 if group == "ai" else 120
         try:
             allowed = await run_in_threadpool(limiter.allow, peer+":"+group, limit)
             if not allowed:

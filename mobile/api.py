@@ -111,8 +111,8 @@ class AuthClient:
     def set_goal(self, title, target_minor):
         return self.call("/goal", {"title": title, "target_minor": target_minor}, method="PUT", namespace="/api/v1/analytics")
 
-    def assistant(self, topic):
-        return self.call("/assistant", {"topic": topic}, namespace="/api/v1/analytics")
+    def assistant(self, topic, allow_external_ai=False):
+        return self.call("/assistant", {"topic": topic, "allow_external_ai": allow_external_ai}, namespace="/api/v1/analytics")
 
     def profile(self):
         return self.call('/me', method='GET')

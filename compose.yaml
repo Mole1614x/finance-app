@@ -18,6 +18,11 @@ services:
         condition: service_healthy
   api:
     <<: *app
+    environment:
+      <<: *app-env
+      ARTH_AI_ENABLED: ${ARTH_AI_ENABLED:-0}
+      ARTH_GEMINI_API_KEY: ${ARTH_GEMINI_API_KEY:-}
+      ARTH_GEMINI_MODEL: ${ARTH_GEMINI_MODEL:-}
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       migrate:
