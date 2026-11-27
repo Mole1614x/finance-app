@@ -14,4 +14,52 @@ jobs:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
       - run: python -m pytest backend/tests
-      - run: python -m compileall -q mobile backend
+      - run: python -m compileall -q mobile backend scripts
+  postgres-redis:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: arth
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: arth_test
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U arth -d arth_test" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ARTH_TEST_POSTGRES_URL: postgresql+psycopg://arth:ci-only-password@localhost:5432/arth_test
+      ARTH_TEST_REDIS_URL: redis://localhost:6379/1
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r backend/requirements.txt
+      - name: Verify PostgreSQL migration
+        env:
+          DATABASE_URL: postgresql+psycopg://arth:ci-only-password@localhost:5432/arth_test
+        run: |
+          alembic upgrade head
+          alembic check
+          alembic downgrade base
+      - run: python -m pytest backend/tests
+      - name: Verify Redis and Celery worker
+        run: |
+          celery -A backend.app.worker:celery_app worker --pool=solo --loglevel=WARNING > /tmp/arth-worker.log 2>&1 &
+          python -c 'from backend.app.worker import ping; assert ping.delay().get(timeout=30) == "pong"'
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/init_demo_env.py
+      - run: docker compose config --quiet
+      - run: docker compose up --build -d --wait --wait-timeout 180
+      - run: curl --fail http://127.0.0.1:8000/ready
+      - run: docker compose exec -T worker python -c 'from backend.app.worker import ping; assert ping.delay().get(timeout=30) == "pong"'
+      - if: always()
+        run: docker compose down -v

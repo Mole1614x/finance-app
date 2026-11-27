@@ -1,28 +1,47 @@
+x-app: &app
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  environment: &app-env
+    ARTH_MANAGED_SCHEMA: "1"
+    ARTH_JWT_SECRET: ${ARTH_JWT_SECRET:?Run python scripts/init_demo_env.py first}
+    DATABASE_URL: postgresql+psycopg://arth:${ARTH_DB_PASSWORD:?Run python scripts/init_demo_env.py first}@db:5432/arth
+    REDIS_URL: redis://redis:6379/0
+    ARTH_RATE_LIMIT_REDIS_URL: redis://redis:6379/1
+  security_opt: ["no-new-privileges:true"]
 services:
-  api:
-    build: .
-    ports: ["127.0.0.1:8000:8000"]
-    environment:
-      REDIS_URL: redis://redis:6379/0
-      DATABASE_URL: postgresql+psycopg://arth:local-demo-only@db:5432/arth
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
     depends_on:
       db:
         condition: service_healthy
+  api:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   worker:
-    build: .
-    command: ["celery", "-A", "backend.app.worker:celery_app", "worker", "--loglevel=INFO"]
-    environment:
-      REDIS_URL: redis://redis:6379/0
+    <<: *app
+    command: ["celery", "-A", "backend.app.worker:celery_app", "worker", "--loglevel=INFO", "--concurrency=1"]
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
   db:
     image: postgres:16
     environment:
       POSTGRES_USER: arth
-      POSTGRES_PASSWORD: local-demo-only
+      POSTGRES_PASSWORD: ${ARTH_DB_PASSWORD:?Run python scripts/init_demo_env.py first}
       POSTGRES_DB: arth
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -30,7 +49,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U arth -d arth"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 15
   redis:
     image: redis:7-alpine
     healthcheck:

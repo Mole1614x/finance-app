@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: arth-api
+spec:
+  type: ClusterIP
+  selector: {app: arth-api}
+  ports:
+    - {port: 8000, targetPort: 8000}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arth-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: arth-api}
+  template:
+    metadata:
+      labels: {app: arth-api}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: api
+          image: arth-demo:0.9.0
+          imagePullPolicy: Never
+          envFrom:
+            - secretRef: {name: arth-demo-secrets}
+          env:
+            - {name: ARTH_MANAGED_SCHEMA, value: "1"}
+            - {name: DATABASE_URL, value: "postgresql+psycopg://arth:$(ARTH_DB_PASSWORD)@arth-db:5432/arth"}
+            - {name: REDIS_URL, value: "redis://arth-redis:6379/0"}
+            - {name: ARTH_RATE_LIMIT_REDIS_URL, value: "redis://arth-redis:6379/1"}
+          ports:
+            - {containerPort: 8000}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8000}
+          livenessProbe:
+            httpGet: {path: /health, port: 8000}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities: {drop: [ALL]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arth-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: arth-worker}
+  template:
+    metadata:
+      labels: {app: arth-worker}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: worker
+          image: arth-demo:0.9.0
+          imagePullPolicy: Never
+          command: [celery, -A, backend.app.worker:celery_app, worker, --loglevel=INFO, --concurrency=1]
+          env:
+            - {name: REDIS_URL, value: "redis://arth-redis:6379/0"}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities: {drop: [ALL]}

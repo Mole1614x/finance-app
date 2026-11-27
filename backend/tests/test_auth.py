@@ -1,3 +1,4 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
@@ -8,9 +9,23 @@ from sqlalchemy.orm import Session
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     engine.cache_clear()
-    monkeypatch.setenv("DATABASE_URL", "sqlite:///" + str(tmp_path / "test.db"))
+    from backend.app.auth import Base
+    from backend.app import security
+    # Explicit opt-in to a disposable PostgreSQL database, never DATABASE_URL.
+    pg = os.getenv("ARTH_TEST_POSTGRES_URL")
+    if pg:
+        from sqlalchemy.engine import make_url
+        assert make_url(pg).database == "arth_test", "Only use disposable arth_test database"
+    monkeypatch.setenv("DATABASE_URL", pg or "sqlite:///" + str(tmp_path / "test.db"))
+    monkeypatch.delenv("ARTH_MANAGED_SCHEMA", raising=False)
+    monkeypatch.setattr(security, "limiter", security.RateLimiter())
+    if pg:
+        Base.metadata.drop_all(engine())
+        Base.metadata.create_all(engine())
     with TestClient(app) as c:
         yield c
+    if pg:
+        Base.metadata.drop_all(engine())
     engine().dispose()
     engine.cache_clear()
 

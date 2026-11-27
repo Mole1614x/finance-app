@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: arth-migrate-0001
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: arth-demo:0.9.0
+          imagePullPolicy: Never
+          command: [alembic, upgrade, head]
+          envFrom:
+            - secretRef: {name: arth-demo-secrets}
+          env:
+            - {name: ARTH_MANAGED_SCHEMA, value: "1"}
+            - {name: DATABASE_URL, value: "postgresql+psycopg://arth:$(ARTH_DB_PASSWORD)@arth-db:5432/arth"}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities: {drop: [ALL]}

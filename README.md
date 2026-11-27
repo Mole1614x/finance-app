@@ -18,7 +18,7 @@ For the desktop mobile preview, in a separate Python environment:
     pip install -r mobile/requirements.txt
     python -m mobile.main
 
-For local infrastructure: docker compose up --build. API at localhost:8000. Database and Redis remain on the internal Compose network. Local development credentials are not production secrets.
+For local infrastructure: python3 scripts/init_demo_env.py, then docker compose up --build -d. API at localhost:8000. Database and Redis remain on the internal Compose network. Local development credentials are not production secrets.
 
 Android: install Buildozer on a supported Linux host, then cd mobile && buildozer android debug (not yet validated). iOS packaging is planned.
 
@@ -44,3 +44,6 @@ Open Bills and recharge for fictional monthly bills and recharge plans. Confirm 
 
 ## Financial insights (PR 9)
 Open Financial insights for actual demo ledger monthly spending, categories, budgets, estimates and a savings goal. The local rule-based assistant and unusual spending heuristic use no external AI or real financial data. See docs/analytics.md.
+
+## Demo release readiness (PR 10)
+Use sh scripts/start-demo.sh to initialize private local secrets and start Compose. See docs/release.md for Alembic adoption, CI checks, limitations and local Kubernetes instructions. Existing databases require explicit baseline adoption after verification; do not delete existing data.

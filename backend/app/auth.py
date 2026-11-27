@@ -20,7 +20,17 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 router = APIRouter(prefix="/api/v1/auth", tags=["demo authentication"])
 hasher = PasswordHasher()
 bearer = HTTPBearer(auto_error=False)
-SECRET = os.getenv("ARTH_JWT_SECRET") or secrets.token_hex(32)
+def signing_secret():
+    value = os.getenv("ARTH_JWT_SECRET")
+    if value is not None:
+        if len(value) < 32:
+            raise RuntimeError("ARTH_JWT_SECRET must contain at least 32 characters.")
+        return value
+    if os.getenv("ARTH_MANAGED_SCHEMA") == "1":
+        raise RuntimeError("ARTH_JWT_SECRET is required in managed demo mode.")
+    return secrets.token_hex(32)
+
+SECRET = signing_secret()
 ACCESS_TTL = 900
 SESSION_TTL = 604800
 
@@ -53,14 +63,15 @@ class LoginSession(Base):
 
 @lru_cache(maxsize=1)
 def engine():
-    db = create_engine(os.getenv("DATABASE_URL", "sqlite:///./arth-demo.db"))
+    db = create_engine(os.getenv("DATABASE_URL", "sqlite:///./arth-demo.db"), pool_pre_ping=True)
     if db.dialect.name == "sqlite":
         @event.listens_for(db, "connect")
         def sqlite_foreign_keys(connection, _):
             cursor = connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.close()
-    Base.metadata.create_all(db)
+    if os.getenv("ARTH_MANAGED_SCHEMA") != "1":
+        Base.metadata.create_all(db)
     return db
 
 def get_db():
