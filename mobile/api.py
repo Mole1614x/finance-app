@@ -84,6 +84,19 @@ class AuthClient:
     def lookup_payment(self, key):
         return self.call("/payment-lookup", {"idempotency_key": key}, namespace="/api/v1/transactions")
 
+    def service_catalog(self):
+        return self.call("/catalog", method="GET", namespace="/api/v1/services")
+
+    def purchase_service(self, sku, cycle, key):
+        return self.call("/purchase", {"sku": sku, "bill_cycle": cycle},
+                         namespace="/api/v1/services", extra_headers={"Idempotency-Key": key})
+
+    def service_orders(self):
+        return self.call("/orders", method="GET", namespace="/api/v1/services")
+
+    def rewards(self):
+        return self.call("/rewards", method="GET", namespace="/api/v1/services")
+
     def profile(self):
         return self.call('/me', method='GET')
 

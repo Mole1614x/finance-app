@@ -6,7 +6,7 @@ except ImportError:
     from dashboard_data import inr
 
 NAMES = {"opening": "Opening funds", "internal": "Account transfer",
-         "sent": "Money sent", "received": "Money received"}
+         "sent": "Money sent", "received": "Money received", "service": "Bill / recharge", "reward": "Demo cashback"}
 
 def time_label(timestamp):
     return datetime.fromtimestamp(timestamp, timezone.utc).strftime("%d %b %Y, %H:%M UTC")

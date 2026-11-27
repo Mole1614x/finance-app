@@ -11,7 +11,7 @@ from backend.app.ledger import Account, Journal
 from backend.app.payments import Payment
 
 router = APIRouter(prefix="/api/v1/transactions", tags=["demo transactions"])
-Kind = Literal["all", "opening", "internal", "sent", "received"]
+Kind = Literal["all", "opening", "internal", "sent", "received", "service", "reward"]
 
 def visible_query(owner):
     source = aliased(Account)
@@ -27,6 +27,10 @@ def render(row, owner):
     if payment:
         kind = "sent" if payment.sender_id == owner else "received"
         change = -journal.amount_minor if kind == "sent" else journal.amount_minor
+    elif journal.idempotency_key.startswith("svc:"):
+        kind, change = "service", -journal.amount_minor
+    elif journal.idempotency_key.startswith("reward:"):
+        kind, change = "reward", journal.amount_minor
     elif journal.kind == "opening":
         kind, change = "opening", journal.amount_minor
     else:
@@ -37,15 +41,18 @@ def render(row, owner):
         "amount_minor": journal.amount_minor, "balance_change_minor": change,
         "created_at": journal.created_at, "simulated": True,
         "source": source.kind if source.owner_id == owner and source.kind != "funding" else
-                  ("demo funding" if journal.kind == "opening" else "another demo account"),
-        "destination": target.kind if target.owner_id == owner else "another demo account",
+                  ("demo reward funding" if kind == "reward" else "demo funding" if kind == "opening" else "another demo account"),
+        "destination": "demo service clearing" if kind == "service" else target.kind if target.owner_id == owner else "another demo account",
     }
 
 def history(db, owner, kind="all", limit=20, offset=0, since=None, until=None):
     query, source, target = visible_query(owner)
     filters = {
         "opening": and_(Payment.id.is_(None), Journal.kind == "opening"),
-        "internal": and_(Payment.id.is_(None), Journal.kind == "internal"),
+        "internal": and_(Payment.id.is_(None), Journal.kind == "internal",
+                         ~Journal.idempotency_key.startswith("svc:"), ~Journal.idempotency_key.startswith("reward:")),
+        "service": Journal.idempotency_key.startswith("svc:"),
+        "reward": Journal.idempotency_key.startswith("reward:"),
         "sent": Payment.sender_id == owner,
         "received": Payment.recipient_id == owner,
     }

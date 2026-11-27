@@ -136,6 +136,8 @@ def install_dashboard(manager: ScreenManager, sign_out):
     body.add_widget(button("Check your bank accounts", lambda: go("accounts")))
     for name, title in (("scan", "Scan & Pay"), ("send", "Send money"), ("receive", "Receive money"), ("transactions", "Transaction history")):
         body.add_widget(button(title, lambda target=name: go(target), True))
+    body.add_widget(button("Bills and recharge", lambda: go("services")))
+    body.add_widget(button("Rewards and offers", lambda: go("promotions"), True))
     recent = label("", 190)
     body.add_widget(label("Recent transactions", 38, "H6"))
     body.add_widget(recent)
@@ -203,10 +205,15 @@ def install_dashboard(manager: ScreenManager, sign_out):
         from transaction_data import row_label
     install_transaction_screens(manager, make, nav, go, run)
 
+    try:
+        from .service_ui import install_service_screens
+    except ImportError:
+        from service_ui import install_service_screens
+    install_service_screens(manager, make, nav, go, run)
+
     descriptions = {
         "payments": ("Payments", "Select a simulated payment option. No real funds."),
         "notifications": ("Notifications", "No notifications yet."),
-        "promotions": ("Promotions", "No active offers."),
         "savings": ("Savings", "Savings tools are planned."),
         "settings": ("Settings", "Demo mode only. No real banking or payment credentials should be entered."),
     }
@@ -214,7 +221,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
         _, outer, body = make(name, title)
         body.add_widget(label(copy, 110))
         if name == "payments":
-            for target, action in (("scan", "Scan & Pay"), ("send", "Send money"), ("receive", "Receive money")):
+            for target, action in (("scan", "Scan & Pay"), ("send", "Send money"), ("receive", "Receive money"), ("services", "Bills and recharge")):
                 body.add_widget(button(action, lambda target=target: go(target)))
         body.add_widget(button("Back to home", lambda: go("home"), True))
         nav(outer)

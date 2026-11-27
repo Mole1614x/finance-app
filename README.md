@@ -38,3 +38,6 @@ Initialize accounts for two fictional users. Copy the recipient's ARTH-only paym
 
 ## Transaction history (PR 7)
 Open History to view completed demo ledger entries, filter by type and copy a simulated receipt. During an uncertain payment, check status using the same reference. See docs/transactions.md.
+
+## Demo bills and rewards (PR 8)
+Open Bills and recharge for fictional monthly bills and recharge plans. Confirm a purchase with simulated funds; cashback goes directly to demo checking. Rewards shows lifetime cashback. No real services are delivered. See docs/services.md.
