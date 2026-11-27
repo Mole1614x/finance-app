@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: arth-db
+spec:
+  selector: {app: arth-db}
+  ports:
+    - {port: 5432, targetPort: 5432}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: arth-db
+spec:
+  serviceName: arth-db
+  replicas: 1
+  selector:
+    matchLabels: {app: arth-db}
+  template:
+    metadata:
+      labels: {app: arth-db}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - {name: POSTGRES_USER, value: arth}
+            - {name: POSTGRES_DB, value: arth}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: arth-demo-secrets, key: ARTH_DB_PASSWORD}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          ports:
+            - {containerPort: 5432}
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, arth, -d, arth]
+            periodSeconds: 5
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests: {storage: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: arth-redis
+spec:
+  selector: {app: arth-redis}
+  ports:
+    - {port: 6379, targetPort: 6379}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arth-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: arth-redis}
+  template:
+    metadata:
+      labels: {app: arth-redis}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - {containerPort: 6379}
+          readinessProbe:
+            exec:
+              command: [redis-cli, ping]
+            periodSeconds: 5
