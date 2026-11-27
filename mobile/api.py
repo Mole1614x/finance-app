@@ -102,6 +102,11 @@ class AuthClient:
         query = "?" + urlencode({"month": month}) if month else ""
         return self.call("/summary" + query, method="GET", namespace="/api/v1/analytics")
 
+    def risk_review(self, month=None):
+        from urllib.parse import urlencode
+        query = "?" + urlencode({"month": month}) if month else ""
+        return self.call("/risk" + query, method="GET", namespace="/api/v1/analytics")
+
     def set_budget(self, month, limit_minor):
         return self.call("/budget", {"month": month, "limit_minor": limit_minor}, method="PUT", namespace="/api/v1/analytics")
 

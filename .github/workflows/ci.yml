@@ -14,6 +14,7 @@ jobs:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
       - run: python -m pytest backend/tests
+      - run: python -m scripts.evaluate_anomaly_model
       - run: python -m compileall -q mobile backend scripts
   postgres-redis:
     runs-on: ubuntu-latest

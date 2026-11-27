@@ -53,3 +53,6 @@ Shared mobile components and onboarding/navigation refinement. Run `python -m mo
 
 ## Optional Gemini assistant (PR 12)
 The Financial assistant is local by default. For opt-in Gemini explanations of fictional aggregate data only, configure private `ARTH_AI_ENABLED=1`, `ARTH_GEMINI_API_KEY`, and `ARTH_GEMINI_MODEL`. Never commit secrets or use real financial data. See docs/ai-assistant.md.
+
+## ML anomaly review (PR 13)
+Open Financial insights > Anomaly review. A local Isolation Forest trained on fictional data highlights unusual spending patterns for review, never blocks a transaction. Run `python -m scripts.evaluate_anomaly_model` for held-out synthetic metrics. See docs/anomaly-model.md.

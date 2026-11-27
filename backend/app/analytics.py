@@ -15,6 +15,7 @@ from backend.app.ledger import Journal, lock_owner, owned_accounts
 from backend.app.transactions import visible_query, render
 from backend.app.services import ServiceOrder, CATALOG
 from backend.app.ai_assistant import explain
+from backend.app.anomaly_model import review as ml_review
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["demo financial insights"])
 MAX_TARGET = 10000000000
@@ -81,7 +82,7 @@ def anomaly_flags(expenses):
         prior.append(amount)
     return flags[-10:]
 
-def summary_for(db, owner, month, *, current=None):
+def summary_for(db, owner, month, *, current=None, include_ml=False):
     current = current or utc_now()
     start, end, days = month_bounds(month)
     current_month = current.strftime("%Y-%m")
@@ -129,12 +130,20 @@ def summary_for(db, owner, month, *, current=None):
             "daily_net_minor": daily, "budget_limit_minor": limit,
             "budget_remaining_minor": limit-spending if limit is not None else None,
             "forecast_spending_minor": forecast, "forecast_method": "linear daily spending extrapolation",
-            "anomalies": anomaly_flags(expenses)}
+            "anomalies": anomaly_flags(expenses),
+            **({"ml_review": ml_review(expenses)} if include_ml else {})}
 
 @router.get("/summary")
 def summary(month: str | None = Query(None, max_length=7),
             session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
     return summary_for(db, session.user_id, month or utc_now().strftime("%Y-%m"))
+
+@router.get("/risk")
+def risk_review(month: str | None = Query(None, max_length=7),
+                session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
+    info = summary_for(db, session.user_id, month or utc_now().strftime("%Y-%m"), include_ml=True)
+    return {"mode": "demo", "month": info["month"], "currency": "INR",
+            "rule_flags": info["anomalies"], **info["ml_review"]}
 
 @router.put("/budget")
 def set_budget(data: BudgetInput, session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
@@ -183,7 +192,7 @@ class AssistantInput(BaseModel):
 @router.post("/assistant")
 def assistant(data: AssistantInput, session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
     owner = session.user_id
-    info = summary_for(db, owner, utc_now().strftime("%Y-%m"))
+    info = summary_for(db, owner, utc_now().strftime("%Y-%m"), include_ml=data.topic == "risk")
     if data.topic == "spending":
         answer = {"spent_minor": info["spent_minor"], "categories": info["categories"]}
     elif data.topic == "budget":
@@ -191,7 +200,8 @@ def assistant(data: AssistantInput, session: LoginSession = Depends(active_sessi
     elif data.topic == "savings":
         answer = goal_for(db, owner)
     else:
-        answer = {"flags": info["anomalies"], "note": "Heuristic review flags are not proof of fraud."}
+        answer = {"flags": info["anomalies"], "ml_review": info["ml_review"],
+                  "note": "Rule-based and ML review flags are not proof of fraud."}
     # Release the read transaction before any bounded external call.
     db.rollback()
     generated = explain(data.topic, answer, data.allow_external_ai)
