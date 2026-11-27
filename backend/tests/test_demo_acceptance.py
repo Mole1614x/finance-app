@@ -1,16 +1,14 @@
 """Integrated demo journey, including durable recovery and ledger reconciliation."""
 from datetime import datetime, timezone
 from uuid import uuid4
+from itertools import count
 from fastapi.testclient import TestClient
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 from alembic import command
 from alembic.config import Config
 from backend.app.main import app
 from backend.app.auth import engine
-from backend.app.ledger import Journal, STARTING_MINOR
+from backend.app.ledger import STARTING_MINOR
 from backend.app.analytics import month_bounds
-from backend.app.services import ServiceOrder
 from backend.tests.test_auth import client
 from backend.tests.test_ledger import headers, login, init, move, balances, assert_reconciled
 from backend.tests.test_payments import receive, send
@@ -24,6 +22,15 @@ def ok(response):
 
 def test_complete_demo_journey(client, tmp_path, monkeypatch):
     monkeypatch.setenv("ARTH_AI_ENABLED", "0")
+    # Set the clock before posting, never rewrite a committed journal entry.
+    from backend.app import ledger, services, analytics
+    report_time = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    start, _, _ = month_bounds(report_time.strftime("%Y-%m"))
+    timestamps = count(start + 60, 60)
+    monkeypatch.setattr(ledger, "now", lambda: next(timestamps))
+    monkeypatch.setattr(services, "now", lambda: next(timestamps))
+    monkeypatch.setattr(services, "cycle_now", lambda: report_time.strftime("%Y-%m"))
+    monkeypatch.setattr(analytics, "utc_now", lambda: report_time)
     a, b = headers(client), login(client)
     init(client, a)
     init(client, b)
@@ -53,15 +60,6 @@ def test_complete_demo_journey(client, tmp_path, monkeypatch):
     ok(client.put(base+"/goal", headers=a, json={"title":"Demo goal","target_minor":50000}))
     ok(move(client, a, amount=50000))
     ok(client.put(base+"/budget", headers=a, json={"month":month,"limit_minor":300000}))
-    # Order outgoing entries strictly in the chosen month for the ML baseline.
-    start, _, _ = month_bounds(month)
-    with Session(engine()) as db:
-        rows = db.scalars(select(Journal).where(Journal.owner_id==owner).order_by(Journal.created_at,Journal.id)).all()
-        for i,row in enumerate(rows):
-            row.created_at = start + 60*(i+1)
-        for row in db.scalars(select(ServiceOrder).where(ServiceOrder.owner_id==owner)):
-            row.created_at = start+60
-        db.commit()
     info = ok(client.get(base+"/summary", headers=a, params={"month":month}))
     spent = 50000+125000+3*19900
     cashback = 2000+3*398
