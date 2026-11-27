@@ -1,4 +1,5 @@
 """Provisional native onboarding, pending original Figma asset integration."""
+from threading import Thread
 from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.utils import get_color_from_hex
@@ -12,9 +13,11 @@ from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.textfield import MDTextField
 try:
     from . import theme, onboarding as demo
+    from .api import AuthClient, APIError
 except ImportError:  # Buildozer entry point
     import theme
     import onboarding as demo
+    from api import AuthClient, APIError
 
 
 def label(text, height=48, size="Body1", color=theme.TEXT):
@@ -64,6 +67,31 @@ class Header(BoxLayout):
 
 
 def install_onboarding(manager):
+    api = AuthClient()
+    manager.auth_client = api
+    busy = False
+
+    def run(operation, success, error):
+        nonlocal busy
+        if busy:
+            return
+        busy = True
+        error.text = "Working..."
+        def finish(value, problem):
+            nonlocal busy
+            busy = False
+            error.text = problem or ""
+            if not problem:
+                success(value)
+        def task():
+            try:
+                value = operation()
+                Clock.schedule_once(lambda _: finish(value, None), 0)
+            except APIError as exc:
+                message = str(exc)
+                Clock.schedule_once(lambda _: finish(None, message), 0)
+        Thread(target=task, daemon=True).start()
+
     def go(name):
         manager.current = name
 
@@ -90,21 +118,16 @@ def install_onboarding(manager):
         body = make(name)
         body.add_widget(Header())
         body.add_widget(label(title, 52, "H4"))
-        body.add_widget(label("Use demo@example.com / demo-only", 48))
+        body.add_widget(label("Use a fictional @example.com address and demo password", 48))
         email, password = field("Email address"), field("Password", True)
         body.add_widget(email)
         body.add_widget(password)
         error = label("", 60)
         body.add_widget(error)
-        def submit(e=email, p=password, msg=error):
-            accepted = demo.demo_credentials(e.text, p.text)
+        def submit(e=email, p=password, msg=error, mode=name):
+            address, secret = e.text, p.text
             p.text = ""
-            if accepted:
-                e.text = ""
-                msg.text = ""
-                go("phone")
-            else:
-                msg.text = "Use the provided demo credentials only."
+            run(lambda: api.credentials(mode, address, secret), lambda _: go("phone"), msg)
         body.add_widget(button(title, submit))
         body.add_widget(button("Back", lambda: go("welcome"), True))
 
@@ -114,37 +137,36 @@ def install_onboarding(manager):
     phone.add_widget(label("Demo verification only. No SMS is sent.", 64))
     number = field("+91 demo number", numeric=True)
     phone.add_widget(number)
-    phone.add_widget(label("Use 9000000000"))
+    phone.add_widget(label("Use 9000000000 (fictional demo number)"))
     phone_error = label("", 48)
     phone.add_widget(phone_error)
     def request_code():
-        if demo.demo_phone(number.text):
-            number.text = ""
-            phone_error.text = ""
-            go("otp")
-        else:
+        if not demo.demo_phone(number.text):
             phone_error.text = "Use the provided demo number."
+            return
+        def received(value):
+            number.text = ""
+            demo_hint.text = "Demo code: " + value
+            go("otp")
+        run(api.request_code, received, phone_error)
     phone.add_widget(button("Get OTP", request_code))
     phone.add_widget(button("Back", lambda: go("welcome"), True))
 
     otp = make("otp")
     otp.add_widget(Widget(size_hint_y=None, height=dp(220)))
     otp.add_widget(label("OTP Verification", 50, "H5"))
-    otp.add_widget(label("Demo code: 7358"))
+    demo_hint = label("Request a demo code")
+    otp.add_widget(demo_hint)
     code = field("Enter four-digit demo code", numeric=True)
     otp.add_widget(code)
     otp_error = label("", 48)
     otp.add_widget(otp_error)
     def verify():
-        accepted = demo.demo_code(code.text)
+        value = code.text
         code.text = ""
-        if accepted:
-            otp_error.text = ""
-            go("home")
-        else:
-            otp_error.text = "Incorrect demo code."
+        run(lambda: api.verify(value), lambda _: go("home"), otp_error)
     otp.add_widget(button("Verify", verify))
-    otp.add_widget(button("Resend demo code", lambda: setattr(otp_error, "text", "Demo code: 7358"), True))
-    otp.add_widget(button("Back", lambda: go("phone"), True))
+    otp.add_widget(button("Restart verification", lambda: go("welcome"), True))
+    otp.add_widget(button("Back", lambda: go("welcome"), True))
     manager.current = "splash"
     Clock.schedule_once(lambda _: go("welcome") if manager.current == "splash" else None, 1.5)

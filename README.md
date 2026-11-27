@@ -23,3 +23,6 @@ For local infrastructure: docker compose up --build. API at localhost:8000. Data
 Android: install Buildozer on a supported Linux host, then cd mobile && buildozer android debug (not yet validated). iOS packaging is planned.
 
 See docs/architecture.md and docs/design.md. The mobile UI is a provisional foundation, not a pixel-verified Figma port.
+
+## Demo authentication (PR 3)
+Start the API first. Register a fictional @example.com account, use a demo password of eight or more characters and enter 9000000000. The server returns a demo OTP displayed in the app. See docs/authentication.md for limitations. The backend uses SQLite by default and PostgreSQL in Compose.

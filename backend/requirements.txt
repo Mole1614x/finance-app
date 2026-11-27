@@ -6,3 +6,5 @@ redis>=5,<7
 celery[redis]>=5.4,<6
 pytest>=8,<9
 httpx>=0.27,<1
+argon2-cffi>=23.1,<26
+PyJWT>=2.9,<3
