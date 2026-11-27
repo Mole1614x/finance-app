@@ -5,7 +5,7 @@ Build configuration: Buildozer 1.6.0, Python-for-Android v2026.05.09, Android AP
 GitHub Actions builds a debug APK, verifies its archive/native ABIs and uploads it with SHA-256. A separate emulator job installs the same artifact, starts a disposable SQLite backend on host loopback, uses adb reverse tcp:8000 tcp:8000, starts the Python activity with an explicit diagnostic intent and checks the UI, generated QR decoding and actual backend /health request. Logs and screenshot are uploaded. These are required CI jobs, not optional pass-through. The diagnostic is not invoked by ordinary launches. Emulator cameras are disabled; no real camera, login or payment flow is tested on Android by this smoke test.
 
 ## Build locally (Linux)
-Use Ubuntu 24.04 with Python 3.11, Java 17, git, zip, unzip, autoconf, libtool, pkg-config, zlib1g-dev, libncurses-dev, libtinfo6, cmake, ninja-build, libffi-dev, libssl-dev, automake, autopoint and gettext. Follow https://buildozer.readthedocs.io/en/1.6.0/installation/ and https://python-for-android.readthedocs.io/en/v2026.05.09/quickstart.html for toolchain prerequisites. From repo root:
+Use Ubuntu 24.04 with Python 3.11, Java 17, git, zip, unzip, autoconf, libtool, libtool-bin, libltdl-dev, pkg-config, zlib1g-dev, libncurses-dev, libtinfo6, cmake, ninja-build, libffi-dev, libssl-dev, automake, autopoint and gettext. Follow https://buildozer.readthedocs.io/en/1.6.0/installation/ and https://python-for-android.readthedocs.io/en/v2026.05.09/quickstart.html for toolchain prerequisites. From repo root:
 
     python3 -m venv .venv-android
     source .venv-android/bin/activate
@@ -32,3 +32,6 @@ Use fictional @example.com credentials and demo OTP only. The app's default API 
 - Record device model, Android version, APK hash, logs and actual pass/fail evidence.
 
 No real-device test, store compliance, signed production APK, iOS build, or exact Figma parity is claimed. Debug package is for isolated demo use only.
+
+## Build troubleshooting
+The first PR 15 build failed during libffi 3.4.2 autogen with `possibly undefined macro: LT_SYS_SYMBOL_USCORE`. Install `libltdl-dev` (and `libtool-bin`) in the Ubuntu build environment. The build script now runs an isolated Autoconf macro preflight before invoking Buildozer. If a previous local native build failed, clean the generated Buildozer build directory before retrying. This change does not disable or bypass any APK or emulator checks. See https://github.com/kivy/python-for-android/issues/1728 for the matching missing-macro dependency report.

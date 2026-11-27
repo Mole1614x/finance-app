@@ -94,7 +94,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses-dev libtinfo6 cmake ninja-build libffi-dev libssl-dev automake autopoint gettext
+          sudo apt-get install -y git zip unzip autoconf libtool libtool-bin libltdl-dev pkg-config zlib1g-dev libncurses-dev libtinfo6 cmake ninja-build libffi-dev libssl-dev automake autopoint gettext
           python -m pip install -r mobile/android-build-requirements.txt
       - name: Build Android APK
         run: bash scripts/build_android.sh
