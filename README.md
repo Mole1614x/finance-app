@@ -26,3 +26,6 @@ See docs/architecture.md and docs/design.md. The mobile UI is a provisional foun
 
 ## Demo authentication (PR 3)
 Start the API first. Register a fictional @example.com account, use a demo password of eight or more characters and enter 9000000000. The server returns a demo OTP displayed in the app. See docs/authentication.md for limitations. The backend uses SQLite by default and PostgreSQL in Compose.
+
+## Dashboard (PR 4)
+After demo verification, the authenticated dashboard shows a synthetic balance and chart, profile editing and navigation to clearly labeled payment previews. See docs/dashboard.md.
