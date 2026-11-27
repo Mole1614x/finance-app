@@ -67,9 +67,14 @@ def serialize_journal(row):
             "currency": "INR", "kind": row.kind, "created_at": row.created_at,
             "status": "completed", "simulated": True}
 
-def post_pair(db, owner, source, destination, amount, kind, key):
+def post_pair(db, owner, source, destination, amount, kind, key, *, peer=False):
     # Caller holds owner lock and commits balance updates and journal atomically.
-    if source.owner_id != owner or destination.owner_id != owner or source.id == destination.id or amount <= 0:
+    if source.owner_id != owner or source.id == destination.id or amount <= 0:
+        fail(400, "Invalid ledger posting.")
+    if peer:
+        if kind != "internal" or source.kind != "checking" or destination.kind != "checking" or destination.owner_id == owner:
+            fail(400, "Invalid peer posting.")
+    elif destination.owner_id != owner:
         fail(400, "Invalid ledger posting.")
     if source.kind != "funding" and source.balance_minor < amount:
         fail(409, "Insufficient demo funds.")

@@ -62,6 +62,16 @@ class AuthClient:
     def move(self, source, destination, amount_minor, key):
         return self.call("/move", {"source": source, "destination": destination, "amount_minor": amount_minor}, namespace="/api/v1/accounts", extra_headers={"Idempotency-Key": key})
 
+    def receive_payment(self):
+        return self.call("/receive", method="GET", namespace="/api/v1/payments")
+
+    def resolve_payment(self, identifier):
+        return self.call("/resolve", {"payment_id": identifier}, namespace="/api/v1/payments")
+
+    def send_payment(self, identifier, amount_minor, key):
+        return self.call("/send", {"payment_id": identifier, "amount_minor": amount_minor},
+                         namespace="/api/v1/payments", extra_headers={"Idempotency-Key": key})
+
     def profile(self):
         return self.call('/me', method='GET')
 
