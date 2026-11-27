@@ -5,6 +5,8 @@ from backend.app.auth import active_session, get_db, LoginSession, User
 
 from backend.app.ledger import owned_accounts, serialize_account
 
+from backend.app.transactions import history
+
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 
 @router.get("")
@@ -19,7 +21,7 @@ def overview(session: LoginSession = Depends(active_session), db: Session = Depe
         "sample_balance": False,
         "payments_enabled": False,  # real payments are never enabled
         "demo_payments_enabled": bool(accounts),
-        "recent_transactions": [],
+        "recent_transactions": history(db, session.user_id, limit=5)["items"],
         "accounts": [serialize_account(a) for a in accounts],
         "notifications": [],
         "sample_cashflow_minor": [120000, -30000, 98000, -44000, 24000, -62000, 117000, -61000, -70000, 24000, -5000, 125000, -20000, 103000, -47000],

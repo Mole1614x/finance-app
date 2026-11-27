@@ -117,6 +117,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
         menu_name.text = name
         balance.text = inr(data["balance_minor"])
         chart.update_values(data["sample_cashflow_minor"])
+        recent.text = "\n".join(row_label(r) for r in data["recent_transactions"][:3]) or "No recent transactions."
 
     home, outer, body = make("home")
     header = MDCard(orientation="vertical", size_hint_y=None, height=dp(152),
@@ -135,11 +136,15 @@ def install_dashboard(manager: ScreenManager, sign_out):
     body.add_widget(button("Check your bank accounts", lambda: go("accounts")))
     for name, title in (("scan", "Scan & Pay"), ("send", "Send money"), ("receive", "Receive money"), ("transactions", "Transaction history")):
         body.add_widget(button(title, lambda target=name: go(target), True))
+    recent = label("", 190)
+    body.add_widget(label("Recent transactions", 38, "H6"))
+    body.add_widget(recent)
     body.add_widget(status)
     body.add_widget(button("Refresh", lambda: load(), True))
     nav(outer)
     def load():
         balance.text = "Loading balance..."
+        recent.text = ""
         chart.update_values([])
         run(manager.auth_client.dashboard, update_home, status)
     home.bind(on_pre_enter=lambda *_: load())
@@ -190,9 +195,16 @@ def install_dashboard(manager: ScreenManager, sign_out):
         from payment_ui import install_payment_screens
     install_payment_screens(manager, make, nav, go, run)
 
+    try:
+        from .transaction_ui import install_transaction_screens
+        from .transaction_data import row_label
+    except ImportError:
+        from transaction_ui import install_transaction_screens
+        from transaction_data import row_label
+    install_transaction_screens(manager, make, nav, go, run)
+
     descriptions = {
         "payments": ("Payments", "Select a simulated payment option. No real funds."),
-        "transactions": ("Transactions", "Transaction history UI is planned. Demo account balances now come from the ledger."),
         "notifications": ("Notifications", "No notifications yet."),
         "promotions": ("Promotions", "No active offers."),
         "savings": ("Savings", "Savings tools are planned."),
