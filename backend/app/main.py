@@ -2,7 +2,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Literal
 
-app = FastAPI(title="ARTH API", version="0.1.0")
+from backend.app.auth import router as auth_router
+
+app = FastAPI(title="ARTH API", version="0.2.0")
+app.include_router(auth_router)
 
 class Health(BaseModel):
     status: Literal["ok"] = "ok"

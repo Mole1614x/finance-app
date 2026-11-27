@@ -1,4 +1,5 @@
 """Provisional ARTH mobile shell; never processes real payments."""
+from threading import Thread
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.core.window import Window
@@ -43,8 +44,8 @@ ScreenManager:
                 on_release: root.current = 'payments'
             Widget:
             MDFlatButton:
-                text: 'Back'
-                on_release: root.current = 'welcome'
+                text: 'Sign out'
+                on_release: app.sign_out()
     Screen:
         name: 'payments'
         MDBoxLayout:
@@ -63,6 +64,16 @@ ScreenManager:
 """
 
 class ArthApp(MDApp):
+    def sign_out(self):
+        client = self.root.auth_client
+        def revoke():
+            try:
+                client.logout()
+            except Exception:
+                pass  # Local tokens are discarded even when offline.
+        Thread(target=revoke, daemon=True).start()
+        self.root.current = 'welcome'
+
     def build(self):
         self.title = "ARTH"
         self.theme_cls.primary_palette = "Blue"

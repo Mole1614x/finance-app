@@ -7,3 +7,5 @@ __pycache__/
 bin/
 *.apk
 .DS_Store
+arth-demo.db
+arth-demo.db-*
