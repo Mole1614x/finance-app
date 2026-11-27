@@ -81,6 +81,12 @@ class AuthClient:
         from urllib.parse import quote
         return self.call("/" + quote(reference, safe=""), method="GET", namespace="/api/v1/transactions")
 
+    def recover_payment(self, key):
+        return self.call("/recover", {"idempotency_key": key}, namespace="/api/v1/payments")
+
+    def cancel_payment(self, key):
+        return self.call("/cancel", {"idempotency_key": key}, namespace="/api/v1/payments")
+
     def lookup_payment(self, key):
         return self.call("/payment-lookup", {"idempotency_key": key}, namespace="/api/v1/transactions")
 

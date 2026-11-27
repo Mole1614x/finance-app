@@ -21,6 +21,39 @@ class Payment(Base):
     sender_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     recipient_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
 
+class CancelledPayment(Base):
+    __tablename__ = "demo_cancelled_payments"
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    request_key: Mapped[str] = mapped_column(String(96), primary_key=True)
+
+class RecoveryKey(BaseModel):
+    idempotency_key: str = Field(min_length=8, max_length=96)
+
+def recovery_result(db, owner, key):
+    journal = db.scalar(select(Journal).where(Journal.owner_id == owner,
+                                               Journal.idempotency_key == "pay:" + key))
+    if journal:
+        payment = db.scalar(select(Payment).where(Payment.journal_id == journal.id))
+        return {"status": "completed", "receipt": receipt(payment, journal), "simulated": True}
+    cancelled = db.get(CancelledPayment, (owner, key))
+    return {"status": "cancelled" if cancelled else "unknown", "receipt": None, "simulated": True}
+
+@router.post("/recover")
+def recover(data: RecoveryKey, session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
+    return recovery_result(db, session.user_id, data.idempotency_key)
+
+@router.post("/cancel")
+def cancel(data: RecoveryKey, session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
+    owner = session.user_id
+    # Serialize with send: cancellation never reverses a committed payment.
+    lock_owner(db, owner)
+    result = recovery_result(db, owner, data.idempotency_key)
+    if result["status"] == "unknown":
+        db.add(CancelledPayment(owner_id=owner, request_key=data.idempotency_key))
+        result["status"] = "cancelled"
+    db.commit()
+    return result
+
 class Recipient(BaseModel):
     payment_id: str = Field(min_length=46, max_length=46)
 
@@ -76,6 +109,8 @@ def send(data: Send, idempotency_key: str = Header(min_length=8, max_length=96),
     for owner in sorted((sender, recipient)):
         lock_owner(db, owner)
     db.expire_all()
+    if db.get(CancelledPayment, (sender, idempotency_key)):
+        fail(409, "This demo payment reference was cancelled.")
     source = account_for(db, sender)
     target = recipient_account(db, data.payment_id)
     if not source:
