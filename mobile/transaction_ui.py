@@ -14,7 +14,7 @@ def install_transaction_screens(manager, make, nav, go, run):
     screen, outer, body = make("transactions", "Transaction history")
     body.add_widget(label("Completed demo transactions only. No real money.", 56))
     names = {"All": "all", "Opening funds": "opening", "Internal transfers": "internal",
-             "Money sent": "sent", "Money received": "received"}
+             "Money sent": "sent", "Money received": "received", "Bills / recharge": "service", "Cashback": "reward"}
     selector = Spinner(text="All", values=list(names), size_hint_y=None, height=dp(48))
     body.add_widget(selector)
     items = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(8))
