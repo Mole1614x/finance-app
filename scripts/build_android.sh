@@ -19,5 +19,14 @@ if ! (cd "$probe" && autoreconf -fi); then
   echo "Missing libtool Autoconf macros. On Ubuntu install libtool, libtool-bin and libltdl-dev." >&2
   exit 1
 fi
+# Prepare pinned upstream source with an auditable, narrow pip isolation fix.
+p4a_source="$PWD/.buildozer/arth-p4a-source"
+mkdir -p "$(dirname "$p4a_source")"
+if [ ! -d "$p4a_source/.git" ]; then
+  git clone --depth 1 --branch v2026.05.09 https://github.com/kivy/python-for-android.git "$p4a_source"
+fi
+test "$(git -C "$p4a_source" describe --tags --exact-match HEAD)" = v2026.05.09
+python ../scripts/patch_p4a.py "$p4a_source/pythonforandroid/build.py"
+export APP_P4A_SOURCE_DIR="$p4a_source"
 buildozer -v android debug
 python ../scripts/verify_android_apk.py bin
