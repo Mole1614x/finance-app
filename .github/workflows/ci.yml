@@ -67,7 +67,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       KIVY_NO_ARGS: "1"
-      KIVY_NO_CONSOLELOG: "1"
       KIVY_METRICS_DENSITY: "1"
     steps:
       - uses: actions/checkout@v4
@@ -76,4 +75,4 @@ jobs:
           python-version: '3.11'
       - run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1 libmtdev1t64
       - run: pip install -r mobile/requirements.txt
-      - run: timeout 90 xvfb-run -a python -m mobile.smoke
+      - run: timeout 90 xvfb-run -a python -u -m mobile.smoke

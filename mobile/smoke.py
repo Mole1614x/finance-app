@@ -40,7 +40,12 @@ def run():
             app.stop()
     Window.size = (375,812)
     Clock.schedule_once(inspect, .4)
-    app.run()
+    try:
+        app.run()
+    except BaseException:
+        import traceback
+        traceback.print_exc()
+        raise
     if errors:
         raise errors[0]
     print("ARTH desktop UI smoke passed")
