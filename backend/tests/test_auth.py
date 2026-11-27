@@ -78,7 +78,7 @@ def test_authenticated_dashboard(client):
     assert result.status_code == 200
     data = result.json()
     assert data["display_name"] == "Dashboard Demo"
-    assert data["balance_minor"] == 850000
-    assert data["sample_balance"] is True
+    assert data["balance_minor"] == 0
+    assert data["sample_balance"] is False
     assert data["payments_enabled"] is False
     assert data["accounts"] == data["recent_transactions"] == []

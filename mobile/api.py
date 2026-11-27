@@ -18,8 +18,9 @@ class AuthClient:
         self.access = None
         self.refresh = None
 
-    def call(self, path, data=None, method="POST", namespace="/api/v1/auth"):
+    def call(self, path, data=None, method="POST", namespace="/api/v1/auth", extra_headers=None):
         headers = {"Content-Type": "application/json"}
+        headers.update(extra_headers or {})
         if self.access:
             headers["Authorization"] = "Bearer " + self.access
         req = Request(self.base + namespace + path,
@@ -51,6 +52,15 @@ class AuthClient:
 
     def dashboard(self):
         return self.call('', method='GET', namespace='/api/v1/dashboard')
+
+    def accounts(self):
+        return self.call("", method="GET", namespace="/api/v1/accounts")
+
+    def initialize_accounts(self):
+        return self.call("/initialize", namespace="/api/v1/accounts")
+
+    def move(self, source, destination, amount_minor, key):
+        return self.call("/move", {"source": source, "destination": destination, "amount_minor": amount_minor}, namespace="/api/v1/accounts", extra_headers={"Idempotency-Key": key})
 
     def profile(self):
         return self.call('/me', method='GET')
