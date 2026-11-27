@@ -20,7 +20,7 @@ For the desktop mobile preview, in a separate Python environment:
 
 For local infrastructure: python3 scripts/init_demo_env.py, then docker compose up --build -d. API at localhost:8000. Database and Redis remain on the internal Compose network. Local development credentials are not production secrets.
 
-Android: install Buildozer on a supported Linux host, then cd mobile && buildozer android debug (not yet validated). iOS packaging is planned.
+Android: see docs/android.md for the debug APK workflow and local installation. iOS packaging is planned.
 
 See docs/architecture.md and docs/design.md. The mobile UI is a provisional foundation, not a pixel-verified Figma port.
 
@@ -59,3 +59,6 @@ Open Financial insights > Anomaly review. A local Isolation Forest trained on fi
 
 ## QR and peer payment recovery (PR 14)
 Scan an ARTH demo QR using the optional local camera, or paste its text. Peer payments keep the original reference across app restarts. Check, retry or safely cancel unresolved references after signing in again. Run Alembic upgrades for managed deployments. See docs/payment-recovery.md. Physical-device camera and APK tests remain pending.
+
+## Android debug build (PR 15)
+The CI workflow builds and checks an ARM64/x86-64 debug APK and runs an Android emulator smoke test. Download the APK only from a successful workflow artifact. Use ADB reverse for local-only backend access. See docs/android.md for setup and physical-device checklist.
