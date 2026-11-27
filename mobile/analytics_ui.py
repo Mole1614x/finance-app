@@ -58,6 +58,7 @@ def install_analytics_screens(manager, make, nav, go, run):
     body.add_widget(button("Save budget", save_budget))
     body.add_widget(button("Refresh / select month", load, True))
     body.add_widget(button("Savings goal", lambda: go("savings"), True))
+    body.add_widget(button("Anomaly review", lambda: go("risk_review"), True))
     body.add_widget(button("Financial assistant", lambda: go("assistant"), True))
     body.add_widget(button("Home", lambda: go("home"), True))
     screen.bind(on_pre_enter=lambda *_: load())
@@ -114,6 +115,31 @@ def install_analytics_screens(manager, make, nav, go, run):
     savings.bind(on_pre_enter=lambda *_: load_goal())
     nav(outer)
 
+    risk, outer, body = make("risk_review", "Demo anomaly review")
+    body.add_widget(label("Isolation Forest trained on synthetic data. Flags do not prove fraud and never block a payment.", 100))
+    risk_report = label("", 160)
+    risk_flags = label("", 180)
+    risk_status = label("", 64)
+    for widget in (risk_report, risk_flags, risk_status):
+        body.add_widget(widget)
+    def show_risk(data):
+        risk_report.text = ("Month: " + data["month"] + "\nEvaluated: " + str(data["evaluated_count"]) +
+                            "\nML review flags: " + str(data["flagged_count"]) +
+                            "\n" + ("Insufficient prior history" if data["status"] == "insufficient_history" else data["note"]))
+        risk_flags.text = "\n\n".join(money(row["amount_minor"]) + " | Review suggested\n" +
+                            str(row["amount_to_prior_median"]) + "× prior median; " +
+                            str(row["prior_hour_expense_count"]) + " earlier expenses in one hour\nReference: " +
+                            row["transaction_id"] for row in data["flags"]) or "No ML review flags."
+    def load_risk():
+        value = month.text.strip()
+        risk_report.text = risk_flags.text = ""
+        run(lambda: manager.auth_client.risk_review(value), show_risk, risk_status)
+    risk.bind(on_pre_enter=lambda *_: load_risk())
+    risk.bind(on_leave=lambda *_: (setattr(risk_report, "text", ""), setattr(risk_flags, "text", "")))
+    body.add_widget(button("Refresh", load_risk, True))
+    body.add_widget(button("Back to insights", lambda: go("analytics"), True))
+    nav(outer)
+
     assistant, outer, body = make("assistant", "Financial assistant")
     body.add_widget(label("Local assistant by default. Optional Gemini explanations send fictional aggregate amounts and fixed categories only to Google. No real data or financial advice.", 120))
     body.add_widget(label("Allow Gemini for this screen (optional)", 48))
@@ -136,6 +162,8 @@ def install_analytics_screens(manager, make, nav, go, run):
                 answer.text = "Saved: " + money(info["saved_minor"]) + "\nTarget: " + money(info["target_minor"])
             else:
                 answer.text = info["note"] + "\n" + ("\n".join(money(x["amount_minor"]) + " — review suggested" for x in info["flags"]) or "No flags from the current heuristic.")
+                ml = info["ml_review"]
+                answer.text += "\nML reviewed: " + str(ml["evaluated_count"]) + "; flagged: " + str(ml["flagged_count"]) + "\n" + ml["note"]
             if data.get("engine") == "gemini":
                 answer.text += "\n\nGemini explanation (may be inaccurate):\n" + data["explanation"]
             elif allow_external:
