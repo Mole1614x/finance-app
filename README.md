@@ -41,3 +41,6 @@ Open History to view completed demo ledger entries, filter by type and copy a si
 
 ## Demo bills and rewards (PR 8)
 Open Bills and recharge for fictional monthly bills and recharge plans. Confirm a purchase with simulated funds; cashback goes directly to demo checking. Rewards shows lifetime cashback. No real services are delivered. See docs/services.md.
+
+## Financial insights (PR 9)
+Open Financial insights for actual demo ledger monthly spending, categories, budgets, estimates and a savings goal. The local rule-based assistant and unusual spending heuristic use no external AI or real financial data. See docs/analytics.md.

@@ -6,6 +6,7 @@ from backend.app.auth import active_session, get_db, LoginSession, User
 from backend.app.ledger import owned_accounts, serialize_account
 
 from backend.app.transactions import history
+from backend.app.analytics import summary_for, utc_now
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 
@@ -13,6 +14,7 @@ router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 def overview(session: LoginSession = Depends(active_session), db: Session = Depends(get_db)):
     user = db.get(User, session.user_id)
     accounts = owned_accounts(db, session.user_id)
+    insights = summary_for(db, session.user_id, utc_now().strftime('%Y-%m'))
     return {
         "mode": "demo",
         "display_name": user.display_name,
@@ -24,5 +26,7 @@ def overview(session: LoginSession = Depends(active_session), db: Session = Depe
         "recent_transactions": history(db, session.user_id, limit=5)["items"],
         "accounts": [serialize_account(a) for a in accounts],
         "notifications": [],
-        "sample_cashflow_minor": [120000, -30000, 98000, -44000, 24000, -62000, 117000, -61000, -70000, 24000, -5000, 125000, -20000, 103000, -47000],
+        "cashflow_minor": insights["daily_net_minor"],
+        "cashflow_month": insights["month"],
+        "sample_cashflow_minor": insights["daily_net_minor"],  # compatibility alias
     }

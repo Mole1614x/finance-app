@@ -116,7 +116,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
         current_name.text = "Welcome, " + name
         menu_name.text = name
         balance.text = inr(data["balance_minor"])
-        chart.update_values(data["sample_cashflow_minor"])
+        chart.update_values(data["cashflow_minor"])
         recent.text = "\n".join(row_label(r) for r in data["recent_transactions"][:3]) or "No recent transactions."
 
     home, outer, body = make("home")
@@ -131,13 +131,14 @@ def install_dashboard(manager: ScreenManager, sign_out):
     card.add_widget(label("Your total demo balance", 32))
     card.add_widget(balance)
     card.add_widget(chart)
-    card.add_widget(label("Illustrative cashflow — not transaction data", 32, "Caption"))
+    card.add_widget(label("Current month net demo cashflow (UTC)", 32, "Caption"))
     body.add_widget(card)
     body.add_widget(button("Check your bank accounts", lambda: go("accounts")))
     for name, title in (("scan", "Scan & Pay"), ("send", "Send money"), ("receive", "Receive money"), ("transactions", "Transaction history")):
         body.add_widget(button(title, lambda target=name: go(target), True))
     body.add_widget(button("Bills and recharge", lambda: go("services")))
     body.add_widget(button("Rewards and offers", lambda: go("promotions"), True))
+    body.add_widget(button("Financial insights", lambda: go("analytics")))
     recent = label("", 190)
     body.add_widget(label("Recent transactions", 38, "H6"))
     body.add_widget(recent)
@@ -155,7 +156,7 @@ def install_dashboard(manager: ScreenManager, sign_out):
     body.add_widget(menu_name)
     for name, title in (("home", "Home"), ("payments", "Payments"), ("transactions", "Transactions"),
                         ("accounts", "Bank accounts / My Cards"), ("promotions", "Promotions"),
-                        ("savings", "Savings"), ("settings", "Settings"), ("profile", "Profile")):
+                        ("savings", "Savings"), ("analytics", "Financial insights"), ("settings", "Settings"), ("profile", "Profile")):
         body.add_widget(button(title, lambda target=name: go(target), True))
     body.add_widget(button("Sign out", sign_out))
 
@@ -211,10 +212,15 @@ def install_dashboard(manager: ScreenManager, sign_out):
         from service_ui import install_service_screens
     install_service_screens(manager, make, nav, go, run)
 
+    try:
+        from .analytics_ui import install_analytics_screens
+    except ImportError:
+        from analytics_ui import install_analytics_screens
+    install_analytics_screens(manager, make, nav, go, run)
+
     descriptions = {
         "payments": ("Payments", "Select a simulated payment option. No real funds."),
         "notifications": ("Notifications", "No notifications yet."),
-        "savings": ("Savings", "Savings tools are planned."),
         "settings": ("Settings", "Demo mode only. No real banking or payment credentials should be entered."),
     }
     for name, (title, copy) in descriptions.items():

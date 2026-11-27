@@ -97,6 +97,23 @@ class AuthClient:
     def rewards(self):
         return self.call("/rewards", method="GET", namespace="/api/v1/services")
 
+    def insights(self, month=None):
+        from urllib.parse import urlencode
+        query = "?" + urlencode({"month": month}) if month else ""
+        return self.call("/summary" + query, method="GET", namespace="/api/v1/analytics")
+
+    def set_budget(self, month, limit_minor):
+        return self.call("/budget", {"month": month, "limit_minor": limit_minor}, method="PUT", namespace="/api/v1/analytics")
+
+    def goal(self):
+        return self.call("/goal", method="GET", namespace="/api/v1/analytics")
+
+    def set_goal(self, title, target_minor):
+        return self.call("/goal", {"title": title, "target_minor": target_minor}, method="PUT", namespace="/api/v1/analytics")
+
+    def assistant(self, topic):
+        return self.call("/assistant", {"topic": topic}, namespace="/api/v1/analytics")
+
     def profile(self):
         return self.call('/me', method='GET')
 
