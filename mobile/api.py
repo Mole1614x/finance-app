@@ -18,11 +18,11 @@ class AuthClient:
         self.access = None
         self.refresh = None
 
-    def call(self, path, data=None, method="POST"):
+    def call(self, path, data=None, method="POST", namespace="/api/v1/auth"):
         headers = {"Content-Type": "application/json"}
         if self.access:
             headers["Authorization"] = "Bearer " + self.access
-        req = Request(self.base + "/api/v1/auth" + path,
+        req = Request(self.base + namespace + path,
                       data=json.dumps(data).encode() if data is not None else None,
                       headers=headers, method=method)
         try:
@@ -48,6 +48,15 @@ class AuthClient:
         tokens = self.call("/otp/verify", {"challenge_id": self.challenge, "code": code})
         self.access, self.refresh = tokens["access_token"], tokens["refresh_token"]
         self.challenge = None
+
+    def dashboard(self):
+        return self.call('', method='GET', namespace='/api/v1/dashboard')
+
+    def profile(self):
+        return self.call('/me', method='GET')
+
+    def update_profile(self, name):
+        return self.call('/me', {'display_name': name}, method='PATCH')
 
     def logout(self):
         try:

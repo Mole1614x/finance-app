@@ -4,8 +4,10 @@ from typing import Literal
 
 from backend.app.auth import router as auth_router
 
-app = FastAPI(title="ARTH API", version="0.2.0")
+app = FastAPI(title="ARTH API", version="0.3.0")
 app.include_router(auth_router)
+from backend.app.dashboard import router as dashboard_router
+app.include_router(dashboard_router)
 
 class Health(BaseModel):
     status: Literal["ok"] = "ok"

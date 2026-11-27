@@ -68,3 +68,17 @@ def test_otp_attempt_limit(client):
     for _ in range(5):
         assert post(client, "/otp/verify", {**ticket, "code": wrong}).status_code == 401
     assert post(client, "/otp/verify", {**ticket, "code": code}).status_code == 401
+
+def test_authenticated_dashboard(client):
+    assert client.get("/api/v1/dashboard").status_code == 401
+    tokens = session(client)
+    headers = {"Authorization": "Bearer " + tokens["access_token"]}
+    client.patch(PREFIX + "/me", headers=headers, json={"display_name": "Dashboard Demo"})
+    result = client.get("/api/v1/dashboard", headers=headers)
+    assert result.status_code == 200
+    data = result.json()
+    assert data["display_name"] == "Dashboard Demo"
+    assert data["balance_minor"] == 850000
+    assert data["sample_balance"] is True
+    assert data["payments_enabled"] is False
+    assert data["accounts"] == data["recent_transactions"] == []

@@ -1,0 +1,5 @@
+# PR 4: dashboard and navigation
+
+Reference: Figma homepage node 7:559 and side menu node 9:3. Extracted primary blue, green balance, rounded balance card, account shortcut and navigation structure. Asset download was attempted with curl and failed with DNS resolution. This is a provisional native implementation, not a pixel-verified port; original portraits, icons, decorative artwork and fonts are still pending. The chart is programmatic and driven by explicitly synthetic API values, not the static Figma chart asset. Menu is a separate screen rather than the original overlay drawer. Native system bars are not simulated.
+
+Authenticated GET /api/v1/dashboard supplies a synthetic INR balance, display name, illustrative cashflow and empty lists. Profile editing uses the existing profile endpoint. Payments, bank account, QR, transactions, rewards and savings routes are preview screens only; no money movement or banking. Mobile runtime and device visual verification remain outstanding. Access-token expiry requires signing in again; automatic refresh is not yet wired.
