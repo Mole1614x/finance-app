@@ -3,7 +3,7 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.uix.screenmanager import NoTransition
 from mobile.main import ArthApp
-from mobile.ui_components import ActionButton
+from mobile.ui_components import ArthActionButton
 
 def run():
     app = ArthApp()
@@ -19,7 +19,7 @@ def run():
             assert required <= set(manager.screen_names)
             manager.current = "welcome"
             signin = next(w for w in manager.current_screen.walk()
-                          if isinstance(w, ActionButton) and w.text == "Sign in")
+                          if isinstance(w, ArthActionButton) and w.text == "Sign in")
             signin.dispatch("on_release")
             assert manager.current == "signin"
             Clock.schedule_once(check_layout, .3)
@@ -30,7 +30,7 @@ def run():
     def check_layout(_):
         try:
             assert app.root.current == "signin"
-            buttons = [w for w in app.root.current_screen.walk() if isinstance(w, ActionButton)]
+            buttons = [w for w in app.root.current_screen.walk() if isinstance(w, ArthActionButton)]
             assert buttons and all(w.width > 0 and w.height >= 48 for w in buttons)
             next(w for w in buttons if w.text == "Back").dispatch("on_release")
             assert app.root.current == "welcome"

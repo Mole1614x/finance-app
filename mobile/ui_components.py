@@ -42,7 +42,7 @@ def panel():
     scroll.add_widget(wrapper)
     return scroll, content
 
-class ActionButton(Button):
+class ArthActionButton(Button):
     def __init__(self, text, callback, flat=False, **kwargs):
         super().__init__(text=text, size_hint_y=None, height=dp(theme.MIN_TOUCH),
                          background_normal="", background_down="", background_disabled_normal="",
@@ -73,7 +73,7 @@ class ActionButton(Button):
         self.color = get_color_from_hex(foreground)
 
 def button(text, callback, flat=False):
-    return ActionButton(text, callback, flat)
+    return ArthActionButton(text, callback, flat)
 
 def field(hint, password=False, numeric=False):
     return MDTextField(hint_text=hint, password=password, multiline=False,
