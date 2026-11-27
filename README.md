@@ -32,3 +32,6 @@ After demo verification, the authenticated dashboard shows a synthetic balance a
 
 ## Simulated accounts (PR 5)
 After signing in, open Bank accounts and initialize the demo checking and savings accounts. The backend records INR 8,500 of fictional opening funds once. The dashboard reads ledger balances. Internal moves can be tested through Swagger; see docs/ledger.md. No real money or banking.
+
+## Demo peer payments (PR 6)
+Initialize accounts for two fictional users. Copy the recipient's ARTH-only payment identifier from Receive, enter it and an amount in Send, review and confirm. No real money or UPI. QR display and decoded-text input are supported; camera scanning is pending. See docs/payments.md.

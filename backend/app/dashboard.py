@@ -17,7 +17,8 @@ def overview(session: LoginSession = Depends(active_session), db: Session = Depe
         "currency": "INR",
         "balance_minor": sum(a.balance_minor for a in accounts),
         "sample_balance": False,
-        "payments_enabled": False,
+        "payments_enabled": False,  # real payments are never enabled
+        "demo_payments_enabled": bool(accounts),
         "recent_transactions": [],
         "accounts": [serialize_account(a) for a in accounts],
         "notifications": [],

@@ -61,6 +61,8 @@ def install_dashboard(manager: ScreenManager, sign_out):
     profile_status = label("", 48)
 
     def go(name):
+        if busy:
+            return
         if manager.auth_client.access:
             manager.current = name
         else:
@@ -182,11 +184,14 @@ def install_dashboard(manager: ScreenManager, sign_out):
     body.add_widget(button("Back to home", lambda: go("home"), True))
     nav(outer)
 
+    try:
+        from .payment_ui import install_payment_screens
+    except ImportError:
+        from payment_ui import install_payment_screens
+    install_payment_screens(manager, make, nav, go, run)
+
     descriptions = {
-        "payments": ("Payments", "Select a payment option. Transfers are not enabled yet."),
-        "scan": ("Scan & Pay", "Camera and payment QR validation are planned. No camera access or payment is performed."),
-        "send": ("Send money", "Peer-to-peer demo payments are planned. Internal demo account moves are available through the API."),
-        "receive": ("Receive money", "Personal demo payment identifiers will be available in a later phase."),
+        "payments": ("Payments", "Select a simulated payment option. No real funds."),
         "transactions": ("Transactions", "Transaction history UI is planned. Demo account balances now come from the ledger."),
         "notifications": ("Notifications", "No notifications yet."),
         "promotions": ("Promotions", "No active offers."),
