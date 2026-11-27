@@ -9,3 +9,6 @@ bin/
 .DS_Store
 arth-demo.db
 arth-demo.db-*
+*.db-journal
+*.db-wal
+*.db-shm
