@@ -4,6 +4,7 @@ from uuid import uuid4
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.uix.widget import Widget
+from kivy.core.clipboard import Clipboard
 try:
     from .onboarding_ui import label, button, field
     from .dashboard_data import inr
@@ -150,7 +151,13 @@ def install_payment_screens(manager, make, nav, go, run):
         identifier.text = ""
         run(manager.auth_client.receive_payment, show, receive_status)
     receive.bind(on_pre_enter=lambda *_: load())
+    def copy_identifier():
+        if identifier.text.startswith("arth-demo:"):
+            Clipboard.copy(identifier.text)
+            receive_status.text = "Demo identifier copied."
+    body.add_widget(button("Copy payment identifier", copy_identifier, True))
     body.add_widget(button("Refresh QR", load, True))
+    receive.bind(on_leave=lambda *_: (qr.show([]), setattr(identifier, "text", "")))
     body.add_widget(button("Back", lambda: go("home"), True))
     nav(outer)
 

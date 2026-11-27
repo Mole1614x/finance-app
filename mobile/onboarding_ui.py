@@ -20,34 +20,10 @@ except ImportError:  # Buildozer entry point
     from api import AuthClient, APIError
 
 
-def label(text, height=48, size="Body1", color=theme.TEXT):
-    return MDLabel(text=text, font_style=size, size_hint_y=None, height=dp(height),
-                   theme_text_color="Custom", text_color=get_color_from_hex(color),
-                   halign="center")
-
-
-def panel():
-    root = BoxLayout(orientation="vertical", padding=dp(30), spacing=dp(16),
-                     size_hint_y=None)
-    root.bind(minimum_height=root.setter("height"))
-    scroll = ScrollView(do_scroll_x=False)
-    scroll.add_widget(root)
-    return scroll, root
-
-
-def button(text, callback, flat=False):
-    cls = MDFlatButton if flat else MDRaisedButton
-    b = cls(text=text, pos_hint={"center_x": .5})
-    if not flat:
-        b.md_bg_color = get_color_from_hex(theme.SECONDARY)
-    b.bind(on_release=lambda *_: callback())
-    return b
-
-
-def field(hint, password=False, numeric=False):
-    return MDTextField(hint_text=hint, password=password, multiline=False,
-                       input_filter="int" if numeric else None,
-                       size_hint_y=None, height=dp(64))
+try:
+    from .ui_components import label, panel, button, field
+except ImportError:
+    from ui_components import label, panel, button, field
 
 
 class Header(BoxLayout):
@@ -93,7 +69,8 @@ def install_onboarding(manager):
         Thread(target=task, daemon=True).start()
 
     def go(name):
-        manager.current = name
+        if not busy:
+            manager.current = name
 
     def make(name):
         screen = Screen(name=name)
@@ -103,20 +80,20 @@ def install_onboarding(manager):
         return body
 
     splash = make("splash")
-    splash.add_widget(Widget(size_hint_y=None, height=dp(260)))
+    splash.add_widget(Widget(size_hint_y=None, height=dp(120)))
     splash.add_widget(label("ARTH", 80, "H2", theme.PRIMARY))
     splash.add_widget(label("Pay. Manage. Prosper."))
     splash.add_widget(button("Continue", lambda: go("welcome")))
 
     welcome = make("welcome")
-    welcome.add_widget(Header(390))
+    welcome.add_widget(Header(250))
     welcome.add_widget(button("Sign in", lambda: go("signin")))
     welcome.add_widget(button("Sign up", lambda: go("signup"), True))
     welcome.add_widget(label("Demo only. Do not enter real credentials.", 60))
 
     for name, title in (("signin", "Sign in"), ("signup", "Sign up")):
         body = make(name)
-        body.add_widget(Header())
+        body.add_widget(Header(160))
         body.add_widget(label(title, 52, "H4"))
         body.add_widget(label("Use a fictional @example.com address and demo password", 48))
         email, password = field("Email address"), field("Password", True)
@@ -125,14 +102,21 @@ def install_onboarding(manager):
         error = label("", 60)
         body.add_widget(error)
         def submit(e=email, p=password, msg=error, mode=name):
-            address, secret = e.text, p.text
+            if busy:
+                return
+            address, secret = e.text.strip(), p.text
+            if not address.lower().endswith("@example.com") or len(secret) < 8:
+                msg.text = "Use an @example.com email and a password of at least 8 characters."
+                return
             p.text = ""
             run(lambda: api.credentials(mode, address, secret), lambda _: go("phone"), msg)
+        password.bind(on_text_validate=lambda *_, action=submit: action())
         body.add_widget(button(title, submit))
         body.add_widget(button("Back", lambda: go("welcome"), True))
+        manager.get_screen(name).bind(on_leave=lambda *_, p=password: setattr(p, "text", ""))
 
     phone = make("phone")
-    phone.add_widget(Widget(size_hint_y=None, height=dp(220)))
+    phone.add_widget(Widget(size_hint_y=None, height=dp(48)))
     phone.add_widget(label("OTP Verification", 50, "H5"))
     phone.add_widget(label("Demo verification only. No SMS is sent.", 64))
     number = field("+91 demo number", numeric=True)
@@ -153,7 +137,7 @@ def install_onboarding(manager):
     phone.add_widget(button("Back", lambda: go("welcome"), True))
 
     otp = make("otp")
-    otp.add_widget(Widget(size_hint_y=None, height=dp(220)))
+    otp.add_widget(Widget(size_hint_y=None, height=dp(48)))
     otp.add_widget(label("OTP Verification", 50, "H5"))
     demo_hint = label("Request a demo code")
     otp.add_widget(demo_hint)
@@ -162,11 +146,17 @@ def install_onboarding(manager):
     otp_error = label("", 48)
     otp.add_widget(otp_error)
     def verify():
-        value = code.text
+        if busy:
+            return
+        value = code.text.strip()
+        if len(value) != 4 or not value.isascii() or not value.isdigit():
+            otp_error.text = "Enter the four-digit demo code."
+            return
         code.text = ""
         run(lambda: api.verify(value), lambda _: go("home"), otp_error)
     otp.add_widget(button("Verify", verify))
     otp.add_widget(button("Restart verification", lambda: go("welcome"), True))
+    manager.get_screen("otp").bind(on_leave=lambda *_: setattr(demo_hint, "text", "Request a demo code"))
     otp.add_widget(button("Back", lambda: go("welcome"), True))
     manager.current = "splash"
     Clock.schedule_once(lambda _: go("welcome") if manager.current == "splash" else None, 1.5)

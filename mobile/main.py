@@ -12,6 +12,8 @@ except ImportError:
 
 class ArthApp(MDApp):
     def sign_out(self):
+        if getattr(self.root, "dashboard_busy", False):
+            return
         client = self.root.auth_client
         # Snapshot the old session so a later login cannot be cleared by logout.
         from copy import copy
@@ -30,8 +32,8 @@ class ArthApp(MDApp):
         self.theme_cls.primary_palette = "Blue"
         Window.clearcolor = (1, 1, 1, 1)
         manager = ScreenManager()
-        install_dashboard(manager, self.sign_out)
         install_onboarding(manager)
+        install_dashboard(manager, self.sign_out)
         return manager
 
 if __name__ == "__main__":
